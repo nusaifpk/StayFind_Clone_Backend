@@ -1,13 +1,26 @@
 import mongoose from "mongoose"
 
 const userSchema = new mongoose.Schema({
-    name:String,
-    email:String,
-    phone:Number,
-    username:String,
-    password:String
-})
+    name: String,
+    email: String,
+    phone: Number,
+    username: String,
+    password: String,
 
-const userModel = mongoose.model("users",userSchema)
+    isActive: {
+        type: Boolean,  
+        default: true
+    },
 
-export default userModel
+    isBlocked: {
+        type: Boolean,
+        default: false
+    },
+
+    wishlist: [{ type: mongoose.Schema.ObjectId, ref: 'wishlist', autopopulate: true }],
+    bookings: [{ type: mongoose.Schema.ObjectId, ref: 'bookings' }],
+}, { timestamps: true });
+
+const userModel = mongoose.model("users", userSchema);
+
+export default userModel;

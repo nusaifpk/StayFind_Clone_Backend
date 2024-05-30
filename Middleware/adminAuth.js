@@ -1,21 +1,23 @@
 import jwt from "jsonwebtoken";
 
 const verifyToken = (req, res, next) => {
-    const token = req.headers["authorization"];
+    const authHeader = req.headers["authorization"];
     
-    if (!token) {
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
         return res.status(403).json({
             error: "No token provided...!"
         });
     }
     
+    const token = authHeader.split(' ')[1];
+
     jwt.verify(token, process.env.ADMIN_ACCESS_TOKEN_SECRET, (error, decoded) => {
         if (error) {
             return res.status(403).json({
-                error: "Unauthorized...!"
+                error: "token verification failed...!"
             });
         }
-        req.email = decoded.email;
+        req.username = decoded.username;
         next(); 
     });
 };

@@ -1,21 +1,26 @@
-import jwt from 'jsonwebtoken'
+import jwt from "jsonwebtoken";
 
-const verifyToken = (req,res,next) => {
-    const token = req.headers["authorization"]
-    if(!token){
-        res.status(404).json({
-            status:"error",
-            message:"No token provided...!"
-        })
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers["authorization"];
+    
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
+        return res.status(403).json({
+            error: "No token provided...!"
+        });
     }
+    
+    const token = authHeader.split(' ')[1];
+
     jwt.verify(token, process.env.USER_ACCESS_TOKEN_SECRET, (error, decoded) => {
-        if(error){
-            res.status(401).json({
-                error:"unauthorization..!"
+        if (error) {
+            console.log(error);
+            return res.status(403).json({
+                error: "token verification failed...!"
             })
         }
-        req.username = decoded.username
-        next()
-    })
-}
-export default verifyToken
+        req.username = decoded.username;
+        next(); 
+    });
+};
+
+export default verifyToken;

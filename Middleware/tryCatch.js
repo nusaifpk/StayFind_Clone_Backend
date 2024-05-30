@@ -4,7 +4,7 @@ const tryCatchMiddleware = (tryCatchHandler) => {
             await tryCatchHandler(req,res,next)
         } catch (error) {
             console.log(error)
-            res.json({
+            return res.json({
                 status:"error",
                 message: error.message
             })
