@@ -5,7 +5,7 @@ import { sendOTP } from "./Verify_OTP.js"
 import jwt from 'jsonwebtoken'
 import properties from '../Model/propertySchema.js'
 import reviews from "../Model/reviewSchema.js"
-import Razorpay from "razorpay";  
+import Razorpay from "razorpay";
 import nodemailer from "nodemailer"
 import userModel from '../Model/userSchema.js'
 import bookings from '../Model/bookingShema.js'
@@ -13,10 +13,9 @@ import mongoose from 'mongoose'
 
 
 //--------------------------------------------------REGISTER & LOGIN SECTION --------------------------------------------------//
-export const userRegister = async (req, res, next) => {
+export const userRegister = async (req, res) => {
   try {
     const { value, error } = joiUserSchema.validate(req.body);
-
     if (error) {
       return res.status(400).json({
         status: "error",
@@ -25,9 +24,7 @@ export const userRegister = async (req, res, next) => {
     }
 
     const { name, email, phone, username, password } = value;
-    console.log(value);
-
-    const existingUser = await users.findOne({ username: username });
+    const existingUser = await userModel.findOne({ username });
     if (existingUser) {
       return res.status(400).json({
         status: "error",
@@ -35,33 +32,58 @@ export const userRegister = async (req, res, next) => {
       });
     }
 
-    try {
-      await sendOTP(req, res);
-    } catch (error) {
-      return next(error);
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new users({
-      name: name,
-      email: email,
-      phone: phone,
-      username: username,
+    const newUser = new userModel({
+      name,
+      email,
+      phone,
+      username,
       password: hashedPassword,
     });
+    await newUser.save();
+
+    // Update OTP status as "sent"
+    newUser.otpStatus = "sent";
     await newUser.save();
 
     return res.status(201).json({
       status: "success",
       message: "User registered successfully",
-      data: newUser
+      userId: newUser._id,
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
       status: "error",
-      message: error.details[0].message,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const completeRegistration = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+
+    user.otpStatus = "verified";
+    await user.save();
+
+    return res.status(200).json({
+      status: "success",
+      message: "Registration completed successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error",
     });
   }
 };
@@ -95,7 +117,7 @@ export const userLogin = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ username},
+    const token = jwt.sign({ username },
       process.env.USER_ACCESS_TOKEN_SECRET,
     );
 
@@ -103,7 +125,7 @@ export const userLogin = async (req, res) => {
       status: "success",
       message: "User login successful",
       token: token,
-      user:{
+      user: {
         userId: user._id,
         name: user.name,
         username: user.username,
@@ -126,8 +148,7 @@ export const userLogin = async (req, res) => {
 export const viewProperty = async (req, res) => {
   try {
     const { category, location } = req.query;
-    
-    // Construct a query object
+
     let query = {};
 
     if (category) {
@@ -291,7 +312,7 @@ export const deleteWishlist = async (req, res) => {
       });
     }
 
-    const {propertyId} = req.body
+    const { propertyId } = req.body
 
     if (!propertyId) {
       return res.status(404).json({
@@ -305,7 +326,7 @@ export const deleteWishlist = async (req, res) => {
         message: "Property not found in wishlist...!"
       });
     }
-    
+
 
     user.wishlist.pull(propertyId);
     await user.save();
@@ -359,40 +380,40 @@ export const deleteAllWishlist = async (req, res) => {
 
 
 //--------------------------------------------------REVIEW SECTION --------------------------------------------------//
-export const addReview = async (req,res) => {
-  const {value, error} = joiReviewSchema.validate(req.body);
+export const addReview = async (req, res) => {
+  const { value, error } = joiReviewSchema.validate(req.body);
 
-  if(error){
+  if (error) {
     return res.status(400).json({
       status: "error",
       message: error.details[0].message,
     });
   }
 
-  const {userId, propertyId, rating, review } = value;
+  const { userId, propertyId, rating, review } = value;
 
-  try{
+  try {
     const user = await users.findById(userId)
     const property = await properties.findById(propertyId)
 
-    if(!user){
+    if (!user) {
       return res.status(404).json({
-        status:"error",
-        message:"user not found...!"
+        status: "error",
+        message: "user not found...!"
       })
     }
-    if(!property){
+    if (!property) {
       return res.status(404).json({
-        status:"error",
-        message:"property not found...!"
+        status: "error",
+        message: "property not found...!"
       })
     }
 
-    const existingUserReview = await reviews.findOne({userId, propertyId});
-    if(existingUserReview){
+    const existingUserReview = await reviews.findOne({ userId, propertyId });
+    if (existingUserReview) {
       return res.status(400).json({
-        status:"error",
-        message:"user has been already reviewed this property...!"
+        status: "error",
+        message: "user has been already reviewed this property...!"
       })
     }
 
@@ -404,8 +425,8 @@ export const addReview = async (req,res) => {
     })
     await newReview.save();
 
-   
-    if(!user.reviews){
+
+    if (!user.reviews) {
       user.reviews = []
     }
 
@@ -413,15 +434,15 @@ export const addReview = async (req,res) => {
     await user.save();
 
     return res.status(201).json({
-      status:"success",
-      message:"review added successfully",
-      data:newReview
+      status: "success",
+      message: "review added successfully",
+      data: newReview
     })
-    
-  }catch(error){
+
+  } catch (error) {
     return res.status(500).json({
-      status:"error",
-      message:error.message
+      status: "error",
+      message: error.message
     })
   }
 }
@@ -429,51 +450,51 @@ export const addReview = async (req,res) => {
 export const viewReviews = async (req, res) => {
   const { id: propertyId } = req.params;
   try {
-     const reviewCount = await reviews.countDocuments({ propertyId });
-     const review = await reviews.find({ propertyId }).populate(
-       "userId",
-       'username'
-     );
-     
-     if (!review || review.length === 0) {
-       return res.status(200).json({
-         status: "success",
-         message: "No reviews for this property",
-         data: [],
-         dataCount: reviewCount,
-       });
-     }
+    const reviewCount = await reviews.countDocuments({ propertyId });
+    const review = await reviews.find({ propertyId }).populate(
+      "userId",
+      'username'
+    );
 
-     return res.status(200).json({
-       status: "success",
-       message: "Fetched reviews of this property",
-       data: review,
-       dataCount: reviewCount,
-     });
+    if (!review || review.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        message: "No reviews for this property",
+        data: [],
+        dataCount: reviewCount,
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Fetched reviews of this property",
+      data: review,
+      dataCount: reviewCount,
+    });
   } catch (error) {
-     return res.status(500).json({
-       status: "error",
-       message: error.message,
-     });
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
   }
 };
 
-export const editReview = async (req,res) => {
-  try{
-    const {reviewId, comment} = req.body
+export const editReview = async (req, res) => {
+  try {
+    const { reviewId, comment } = req.body
 
-    if(!reviewId || !comment){
+    if (!reviewId || !comment) {
       return res.status(400).json({
-        status:"error",
-        message:"all field required...!"
+        status: "error",
+        message: "all field required...!"
       })
     }
 
     const review = await reviews.findById(reviewId)
-    if(!review){
+    if (!review) {
       return res.status(404).json({
-        status:"error",
-        message:"review not found...!"
+        status: "error",
+        message: "review not found...!"
       })
     }
 
@@ -481,16 +502,16 @@ export const editReview = async (req,res) => {
     await review.save()
 
     return res.status(200).json({
-      status:"success",
-      message:"review updated successfully",
-      data:review,
+      status: "success",
+      message: "review updated successfully",
+      data: review,
     })
-  }catch(error){
+  } catch (error) {
     console.log(error)
     return res.status(500).josn({
-      status:"error",
-      message:"an unexpected error occurs...!",
-      error:error.message
+      status: "error",
+      message: "an unexpected error occurs...!",
+      error: error.message
     })
   }
 }
@@ -518,22 +539,22 @@ export const payment = async (req, res) => {
 };
 
 export const sendPaymentEmail = async (req, res) => {
-  const { 
+  const {
     userId,
-    email, 
-    amount, 
-    currency, 
-    receipt, 
-    customerName, 
-    hotelName, 
-    bookingId, 
-    checkInDate, 
-    checkOutDate, 
-    numberOfGuests, 
-    paymentDate, 
-    paymentTime, 
-    customerSupportEmail, 
-    customerSupportPhone 
+    email,
+    amount,
+    currency,
+    receipt,
+    customerName,
+    hotelName,
+    bookingId,
+    checkInDate,
+    checkOutDate,
+    numberOfGuests,
+    paymentDate,
+    paymentTime,
+    customerSupportEmail,
+    customerSupportPhone
   } = req.body;
 
   const transporter = nodemailer.createTransport({
@@ -567,11 +588,11 @@ export const sendPaymentEmail = async (req, res) => {
            <p>The Stayfind Team<br>`
   };
 
-  transporter.sendMail(mailOptions, async(error, info) => {
+  transporter.sendMail(mailOptions, async (error, info) => {
     if (error) {
       console.error('Error sending email:', error);
-      return res.status(500).json({ 
-        error: 'error sending email...!' 
+      return res.status(500).json({
+        error: 'error sending email...!'
       });
     }
     else {
@@ -597,16 +618,16 @@ export const sendPaymentEmail = async (req, res) => {
 
         await userModel.findByIdAndUpdate(userId, { $push: { bookings: savedBooking._id } });
 
-        return res.status(200).json({ 
+        return res.status(200).json({
           status: "success",
-          message: 'Email sent successfully and booking updated' ,
+          message: 'Email sent successfully and booking updated',
           // NOITEE
-          bookingId:bookingId
+          bookingId: bookingId
         });
       } catch (dbError) {
         console.error('Error updating booking:', dbError);
-        return res.status(500).json({ 
-          error: 'Error updating booking...!' 
+        return res.status(500).json({
+          error: 'Error updating booking...!'
         });
       }
     }
@@ -621,10 +642,10 @@ export const getBooking = async (req, res) => {
   try {
     const user = await users.findById(userId)
       .populate({
-        path:"bookings",
-        match: {isDeleted : {$ne: true}}
+        path: "bookings",
+        match: { isDeleted: { $ne: true } }
       })
-      
+
     if (!user) {
       return res.status(404).json({
         status: "error",
@@ -646,10 +667,10 @@ export const getBooking = async (req, res) => {
   }
 };
 
-export const deleteBooking = async (req,res) => {
+export const deleteBooking = async (req, res) => {
   try {
-    const userId = req.params.userId; // Extract userId from params
-    const bookingId = req.body.bookingId; // Extract bookingId from body
+    const userId = req.params.userId;
+    const bookingId = req.body.bookingId;
 
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
@@ -695,7 +716,7 @@ export const deleteBooking = async (req,res) => {
 
 
 //--------------------------------------------------ENQUIRY SECTION --------------------------------------------------//
-export const sendEnquiry = async (req,res) => {
+export const sendEnquiry = async (req, res) => {
   const { name, email, message } = req.body;
   console.log(req.body);
 
@@ -714,9 +735,9 @@ export const sendEnquiry = async (req,res) => {
   });
 
   const mailOptions = {
-    from: email, 
-    to: process.env.EMAIL_USER, 
-    replyTo: email, 
+    from: email,
+    to: process.env.EMAIL_USER,
+    replyTo: email,
     subject: `Enquiry from ${name}`,
     text: message
   };
@@ -733,7 +754,7 @@ export const sendEnquiry = async (req,res) => {
     return res.status(500).json({
       status: "error",
       message: 'Error sending email',
-      error:error.message
+      error: error.message
     });
   }
 };
@@ -744,30 +765,30 @@ export const viewProfile = async (req, res) => {
   const userId = req.params.id;
 
   try {
-      const user = await users.findById(userId);
+    const user = await users.findById(userId);
 
-      if (!user) {
-          return res.status(404).json({ 
-            message: 'user not found...!' 
-          });
-      }
-
-      return res.status(200).json({ 
-        message: 'User profile fetched successfully', 
-        data: user 
+    if (!user) {
+      return res.status(404).json({
+        message: 'user not found...!'
       });
-  } 
+    }
+
+    return res.status(200).json({
+      message: 'User profile fetched successfully',
+      data: user
+    });
+  }
   catch (error) {
-      console.error(error);
-      return res.status(500).json({ 
-        message: 'Internal server error' 
-      });
+    console.error(error);
+    return res.status(500).json({
+      message: 'Internal server error'
+    });
   }
 }
 
 export const editProfile = async (req, res) => {
   const userId = req.params.id;
-  const { username } = req.body; 
+  const { username } = req.body;
 
   try {
     const existingUser = await users.findOne({ username });
@@ -779,7 +800,7 @@ export const editProfile = async (req, res) => {
 
     const user = await users.findByIdAndUpdate(
       userId,
-      { username }, 
+      { username },
       { new: true }
     );
 
@@ -792,7 +813,7 @@ export const editProfile = async (req, res) => {
     return res.status(200).json({
       message: "Username updated successfully",
       data: {
-        username: user.username 
+        username: user.username
       }
     });
   } catch (error) {
@@ -802,11 +823,6 @@ export const editProfile = async (req, res) => {
     });
   }
 };
-
-
-//--------------------------------------------------TRIPS SECTION --------------------------------------------------//
-export const viewTrips = async (req,res) => {
-}
 
 
 

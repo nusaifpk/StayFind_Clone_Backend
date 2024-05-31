@@ -11,8 +11,8 @@ const port = process.env.PORT;
 const app = express()
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended:true}));  
-app.use(express.json({extended:true}))
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json({ extended: true }))
 app.use(cors())
 
 const mongoDB = process.env.MONGODB_CONNECT

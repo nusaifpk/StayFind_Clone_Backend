@@ -16,7 +16,7 @@ const bookingSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  
+
   user: { type: mongoose.Schema.ObjectId, ref: 'users' },
   property: { type: mongoose.Schema.ObjectId, ref: 'properties' }
 }, { timestamps: true });

@@ -19,7 +19,8 @@ export const joiPropertySchema = Joi.object({
     images: Joi.array().items(Joi.string()),
     price: Joi.number().positive(),
     reviews: Joi.array().items(Joi.string())
-}) 
+})
+
 export const joiReviewSchema = Joi.object({
     userId: Joi.string(),
     propertyId: Joi.string(),

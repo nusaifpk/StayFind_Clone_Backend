@@ -26,7 +26,7 @@ cloudinary.config({
 });
 
 const imageUpload = (req, res, next) => {
-    upload.array("images", 10)(req, res, async (error) => { 
+    upload.array("images", 10)(req, res, async (error) => {
         if (error) {
             return res.status(400).json({
                 status: "error",

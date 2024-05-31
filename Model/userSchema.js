@@ -6,9 +6,14 @@ const userSchema = new mongoose.Schema({
     phone: Number,
     username: String,
     password: String,
+    otpStatus: {
+        type: String,
+        enum: ["not_sent", "sent", "verified"],
+        default: "not_sent",
+    },
 
     isActive: {
-        type: Boolean,  
+        type: Boolean,
         default: true
     },
 

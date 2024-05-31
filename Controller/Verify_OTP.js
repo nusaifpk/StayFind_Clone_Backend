@@ -7,8 +7,9 @@ const authToken = process.env.AUTH_TOKEN;
 const serviceId = process.env.SERVICE_ID;
 const client = twilio(accountSid, authToken);
 
-export const sendOTP = async (req, res)   => {
+export const sendOTP = async (req, res) => {
   const { phone } = req.body;
+  console.log(req.body);
 
   try {
     await client.verify.v2.services(serviceId).verifications.create({
@@ -36,8 +37,6 @@ export const verifyOTP = async (req, res) => {
       to: "+91" + phone,
       code: otp,
     });
-
-    // console.log(verificationCheck);  
 
     if (verificationCheck.status === "approved") {
       console.log("OTP verified successfully");

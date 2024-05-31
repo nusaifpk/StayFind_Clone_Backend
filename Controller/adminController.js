@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken"
 import users from '../Model/userSchema.js'
 import properties from '../Model/propertySchema.js'
 import { joiPropertySchema } from '../Model/validationSchema.js'
+import bookings from '../Model/bookingShema.js'
 
 
 //--------------------------------------------------LOGIN SECTION --------------------------------------------------//
@@ -26,7 +27,7 @@ export const adminLogin = async (req, res) => {
     }
 }
 
-//--------------------------------------------------USER SECTION --------------------------------------------------//
+//--------------------------------------------------USER MANAGEMENT --------------------------------------------------//
 export const viewUser = async (req, res) => {
     const all_users = await users.find();
     const all_user_count = await users.countDocuments();
@@ -70,16 +71,16 @@ export const blockUser = async (req, res) => {
     try {
         const userId = req.params.id
         const user = await users.findById(userId);
-        
-        if(!user){
+
+        if (!user) {
             return res.status(404).json({
-                message: "User not found" 
+                message: "User not found"
             });
         }
 
-        if(user.isBlocked){
+        if (user.isBlocked) {
             return res.status(400).json({
-                message: "User is already blocked" 
+                message: "User is already blocked"
             });
         }
 
@@ -88,31 +89,31 @@ export const blockUser = async (req, res) => {
 
         return res.status(200).json({
             message: "User is blocked! 🔒",
-            data:user 
+            data: user
         });
-    }catch(error){
+    } catch (error) {
         return res.status(500).json({
             message: "Internal server error"
         })
     }
 }
 
-export const unBlockUser = async (req,res) => {
+export const unBlockUser = async (req, res) => {
     try {
         const userId = req.params.id
         const user = await users.findById(userId);
-        
-        if(!user){
+
+        if (!user) {
             return res.status(404).json({
-                status:"error",
-                message: "User not found" 
+                status: "error",
+                message: "User not found"
             });
         }
 
-        if(!user.isBlocked){
+        if (!user.isBlocked) {
             return res.status(400).json({
-                error:"error",
-                message: "User is not blocked" 
+                error: "error",
+                message: "User is not blocked"
             });
         }
 
@@ -120,11 +121,11 @@ export const unBlockUser = async (req,res) => {
         await user.save();
 
         return res.status(200).json({
-            status:"success",
+            status: "success",
             message: "User is unblocked 🔓",
-            data:user 
+            data: user
         });
-    } catch (error){
+    } catch (error) {
         return res.status(500).json({
             message: "Internal server error"
         })
@@ -132,7 +133,7 @@ export const unBlockUser = async (req,res) => {
 }
 
 
-//--------------------------------------------------PROPERTY SECTION --------------------------------------------------//
+//--------------------------------------------------PROPERTY MANAGEMENT --------------------------------------------------//
 export const addProperty = async (req, res) => {
     const { value, error } = joiPropertySchema.validate(req.body)
     const { name, category, location, guest, bedroom, bathroom, description, images, price } = value
@@ -187,21 +188,21 @@ export const viewProperty = async (req, res) => {
 export const viewPropertyById = async (req, res) => {
     const propertyId = req.params.id
     const property = await properties.findById(propertyId)
-  
+
     if (!property) {
-      return res.status(404).json({
-        status: "error",
-        message: "property not found...!"
-      })
+        return res.status(404).json({
+            status: "error",
+            message: "property not found...!"
+        })
     }
     return res.status(200).json({
-      status: "success",
-      message:"fetched property by id",
-      data: property
+        status: "success",
+        message: "fetched property by id",
+        data: property
     })
-  }
+}
 
-  export const updateProperty = async (req, res) => {
+export const updateProperty = async (req, res) => {
     const { name, category, location, guest, bedroom, bathroom, description, images, price } = value;
     const propertyId = req.params.id;
 
@@ -218,7 +219,7 @@ export const viewPropertyById = async (req, res) => {
         const updatedProperty = await properties.findByIdAndUpdate(
             propertyId,
             { $set: { name, category, location, guest, bedroom, bathroom, description, images, price } },
-            { new: true, runValidators: true } // Ensure validators run on update
+            { new: true, runValidators: true }
         );
 
         if (updatedProperty) {
@@ -277,3 +278,33 @@ export const deleteProperty = async (req, res) => {
         })
     }
 }
+
+
+//--------------------------------------------------BOOKINGS MANAGEMENT --------------------------------------------------//
+export const getAllBookings = async (req, res) => {
+    try {
+        const allBookings = await bookings.find({}).populate('user', 'name email phone');
+        const allBookingsCount = await bookings.countDocuments()
+
+        if (!allBookings || allBookings.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "No bookings found",
+            });
+        }
+
+        return res.status(200).json({
+            status: "success",
+            message: "Fetched all bookings successfully",
+            data: allBookings,
+            dataCount: allBookingsCount
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+            error: error.message,
+        });
+    }
+};
