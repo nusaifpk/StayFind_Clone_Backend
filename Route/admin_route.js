@@ -1,6 +1,6 @@
 import express from "express"
 import tryCatchMiddleware from "../Middleware/tryCatch.js"
-import { addProperty, adminLogin, blockUser, deleteProperty, getAllBookings, unBlockUser, updateProperty, viewProperty, viewPropertyById, viewUser, viewUserById } from "../Controller/adminController.js"
+import { addCategory, addProperty, adminLogin, blockUser, deleteCategory, deleteProperty, editCategory, getAllBookings, unBlockUser, updateProperty, viewCategory, viewProperty, viewPropertyById, viewUser, viewUserById } from "../Controller/adminController.js"
 import verifyToken from "../Middleware/adminAuth.js"
 import imageUploader from "../Middleware/imageUpload/imageUpload.js"
 
@@ -22,5 +22,9 @@ admin_router
     .put('/property/:id', imageUploader, tryCatchMiddleware(updateProperty))
     .delete('/property/:id', tryCatchMiddleware(deleteProperty))
     .get('/bookings', tryCatchMiddleware(getAllBookings))
+    .post('/categories', tryCatchMiddleware(addCategory))
+    .get('/categories', tryCatchMiddleware(viewCategory))
+    .put('/categories/:id', tryCatchMiddleware(editCategory))
+    .delete('/categories/:id', tryCatchMiddleware(deleteCategory))
 
 export default admin_router

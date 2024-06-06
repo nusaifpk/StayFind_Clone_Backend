@@ -3,6 +3,7 @@ import users from '../Model/userSchema.js'
 import properties from '../Model/propertySchema.js'
 import { joiPropertySchema } from '../Model/validationSchema.js'
 import bookings from '../Model/bookingShema.js'
+import category from "../Model/categorySchema.js"
 
 
 //--------------------------------------------------LOGIN SECTION --------------------------------------------------//
@@ -20,9 +21,9 @@ export const adminLogin = async (req, res) => {
         })
     }
     else {
-        return res.status(404).json({
+        return res.status(401).json({
             status: "error",
-            message: "invalid admin...!"
+            message: "invalid admin credentials...!"
         })
     }
 }
@@ -203,7 +204,6 @@ export const viewPropertyById = async (req, res) => {
 }
 
 export const updateProperty = async (req, res) => {
-    const { name, category, location, guest, bedroom, bathroom, description, images, price } = value;
     const propertyId = req.params.id;
 
     const { value, error } = joiPropertySchema.validate(req.body);
@@ -214,6 +214,8 @@ export const updateProperty = async (req, res) => {
             message: error.details[0].message
         });
     }
+
+    const { name, category, location, guest, bedroom, bathroom, description, images, price } = value;
 
     try {
         const updatedProperty = await properties.findByIdAndUpdate(
@@ -308,3 +310,99 @@ export const getAllBookings = async (req, res) => {
         });
     }
 };
+
+//--------------------------------------------------CATEGORY MANAGEMENT --------------------------------------------------//
+
+export const addCategory = async (req,res) => {
+    const { name } = req.body
+
+    const existingCategory = await category.findOne({ name })
+    if(existingCategory){
+        return res.status(400).json({
+            status:"error",
+            message:"category already added"
+        })
+    }
+    const categories = new category({name})
+    await categories.save()
+
+    
+
+    return res.status(200).json({
+        status:"success",
+        message:"category added successfully",
+        data:categories
+    })
+}
+
+export const viewCategory = async (req,res) => {
+    const categories = await category.find()
+
+    if(categories === ''){
+        return res.status(200).json({
+            status:"success",
+            message:"categories is empty"
+        })
+    }
+
+    return res.status(200).json({
+        status:"success",
+        message:"fetched categories successfully",
+        data:categories
+    })
+}
+
+export const editCategory = async (req,res) => {
+    const categoryId  = req.params.id;
+    const { name } = req.body; 
+  
+  try {
+    const updatedCategory = await category.findByIdAndUpdate(categoryId, { name }, { new: true });
+
+    if (!updatedCategory) {
+      return res.status(404).json({
+        status: "error",
+        message: "Category not found"
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Category updated successfully",
+      data: updatedCategory
+    });
+
+  } 
+  catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error"
+    });
+  }
+}
+
+export const deleteCategory = async (req,res) => {
+    const categoryId = req.params.id
+
+  try {
+    const deletedCategory = await category.findByIdAndDelete(categoryId);
+
+    if (!deletedCategory) {
+      return res.status(404).json({
+        status: "error",
+        message: "Category not found"
+      });
+    }
+    return res.status(200).json({
+      status: "success",
+      message: "Category deleted successfully",
+      data: deletedCategory
+    });
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error"
+    });
+  }
+}
