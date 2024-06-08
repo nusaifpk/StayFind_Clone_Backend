@@ -386,7 +386,7 @@ export const addReview = async (req, res) => {
   if (error) {
     return res.status(400).json({
       status: "error",
-      message: error.details[0].message,
+      message: "please fill in all fields",
     });
   }
 
@@ -451,25 +451,32 @@ export const viewReviews = async (req, res) => {
   const { id: propertyId } = req.params;
   try {
     const reviewCount = await reviews.countDocuments({ propertyId });
-    const review = await reviews.find({ propertyId }).populate(
+    const reviewDocs = await reviews.find({ propertyId }).populate(
       "userId",
       'username'
     );
 
-    if (!review || review.length === 0) {
+    if (!reviewDocs || reviewDocs.length === 0) {
       return res.status(200).json({
         status: "success",
         message: "No reviews for this property",
         data: [],
         dataCount: reviewCount,
+        overallRating: 0,
       });
     }
+
+    const totalRating = reviewDocs.reduce((acc, review) => acc + review.rating, 0);
+    const overallRating = totalRating / reviewCount;
+
+    await properties.findByIdAndUpdate(propertyId, { overallRating });
 
     return res.status(200).json({
       status: "success",
       message: "Fetched reviews of this property",
-      data: review,
+      data: reviewDocs,
       dataCount: reviewCount,
+      overallRating: overallRating.toFixed(1),
     });
   } catch (error) {
     return res.status(500).json({
@@ -478,6 +485,7 @@ export const viewReviews = async (req, res) => {
     });
   }
 };
+
 
 export const editReview = async (req, res) => {
   try {
@@ -515,8 +523,6 @@ export const editReview = async (req, res) => {
     })
   }
 }
-
-
 //--------------------------------------------------PAYMENT SECTION --------------------------------------------------//
 export const payment = async (req, res) => {
   const razorpay = new Razorpay({

@@ -13,6 +13,10 @@ const propertySchema = new mongoose.Schema({
     }],
     price: Number,
     reviews: [{ type: mongoose.Schema.ObjectId, ref: 'reviews' }],
+    overallRating: {
+        type: Number,
+        default: 0
+      }
 },
     { timestamps: true })
 
