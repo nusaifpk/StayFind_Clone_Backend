@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     phone: Number,
     username: String,
     password: String,
+    profileImg: String,
     otpStatus: {
         type: String,
         enum: ["not_sent", "sent", "verified"],

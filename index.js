@@ -15,11 +15,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json({ extended: true }))
 app.use(cors())
 
-const mongoDB = process.env.MONGODB_CONNECT
-
 async function main() {
     try {
-        await mongoose.connect(mongoDB)
+        await mongoose.connect(process.env.MONGODB_CONNECT)
         console.log("Database Connected...✅️");
     } catch (error) {
         console.log(error);

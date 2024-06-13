@@ -11,6 +11,36 @@ import userModel from '../Model/userSchema.js'
 import bookings from '../Model/bookingShema.js'
 import mongoose from 'mongoose'
 
+//Profile Image Multer
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import fs from "fs";
+import path from 'path';
+import cloudinary from 'cloudinary';
+import multer from 'multer';
+
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
+});
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const uploadDirectory = path.resolve(__dirname, "upload");
+const storage = multer.diskStorage({
+    destination: uploadDirectory,
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + file.originalname);
+    }
+});
+
+const upload = multer({ storage });
+
+
+
+
+
 
 //--------------------------------------------------REGISTER & LOGIN SECTION --------------------------------------------------//
 export const userRegister = async (req, res) => {
@@ -42,7 +72,6 @@ export const userRegister = async (req, res) => {
     });
     await newUser.save();
 
-    // Update OTP status as "sent"
     newUser.otpStatus = "sent";
     await newUser.save();
 
@@ -453,7 +482,7 @@ export const viewReviews = async (req, res) => {
     const reviewCount = await reviews.countDocuments({ propertyId });
     const reviewDocs = await reviews.find({ propertyId }).populate(
       "userId",
-      'username'
+      'username profileImg'
     );
 
     if (!reviewDocs || reviewDocs.length === 0) {
@@ -795,32 +824,66 @@ export const viewProfile = async (req, res) => {
 export const editProfile = async (req, res) => {
   const userId = req.params.id;
   const { username } = req.body;
+  let imageUrl;
 
   try {
-    const existingUser = await users.findOne({ username });
+    const existingUser = await userModel.findOne({ username });
     if (existingUser && existingUser._id.toString() !== userId) {
       return res.status(200).json({
         message: "Username already taken"
       });
     }
 
-    const user = await users.findByIdAndUpdate(
-      userId,
-      { username },
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found...!"
-      });
-    }
-
-    return res.status(200).json({
-      message: "Username updated successfully",
-      data: {
-        username: user.username
+    upload.single('profileImg')(req, res, async (error) => {
+      if (error instanceof multer.MulterError) {
+        return res.status(400).json({
+          status: "error",
+          message: error.message
+        });
+      } else if (error) {
+        return res.status(400).json({
+          status: "error",
+          message: error
+        });
       }
+
+      if (req.file) {
+        const result = await cloudinary.uploader.upload(req.file.path, {
+          folder: "Profile-images"
+        });
+        imageUrl = result.secure_url;
+
+        fs.unlink(req.file.path, (unlink_error) => {
+          if (unlink_error) {
+            console.log("Error deleting local file after uploading to Cloudinary");
+          }
+        });
+      }
+
+      const userUpdate = { username };
+      if (imageUrl) {
+        userUpdate.profileImg = imageUrl;
+      }
+
+      const user = await users.findByIdAndUpdate(
+        userId,
+        userUpdate,
+        { new: true }
+      );
+
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found...!"
+        });
+      }
+
+      return res.status(200).json({
+        message: "Profile updated successfully",
+        data: {
+          username: user.username,
+          profileImage: user.profileImg
+        }
+      });
     });
   } catch (error) {
     console.error(error);
@@ -829,6 +892,7 @@ export const editProfile = async (req, res) => {
     });
   }
 };
+
 
 
 

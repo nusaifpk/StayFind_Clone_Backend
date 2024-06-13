@@ -225,7 +225,7 @@ export const updateProperty = async (req, res) => {
         );
 
         if (updatedProperty) {
-            return res.status(200).json({
+            return res.status(200).json({   
                 status: "success",
                 message: "Property updated successfully",
                 data: updatedProperty
