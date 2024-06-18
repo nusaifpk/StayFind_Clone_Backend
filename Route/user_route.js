@@ -12,7 +12,6 @@ user_router
     .post("/verifyotp", tryCatchMiddleware(verifyOTP))
     .post("/register/success", tryCatchMiddleware(completeRegistration))
     .post("/login", tryCatchMiddleware(userLogin))
-
     .get('/properties', tryCatchMiddleware(viewProperty))
     .get('/properties/:id', tryCatchMiddleware(viewPropertyById))
     .get('/properties/:id/review', tryCatchMiddleware(viewReviews))

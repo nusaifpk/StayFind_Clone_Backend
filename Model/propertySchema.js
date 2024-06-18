@@ -16,7 +16,7 @@ const propertySchema = new mongoose.Schema({
     overallRating: {
         type: Number,
         default: 0
-      }
+      },
 },
     { timestamps: true })
 
