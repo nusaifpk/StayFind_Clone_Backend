@@ -12,7 +12,7 @@ export const adminLogin = async (req, res) => {
 
     if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
 
-        const token = jwt.sign({ username }, process.env.ADMIN_ACCESS_TOKEN_SECRET)
+        const token = jwt.sign({ username }, process.env.ADMIN_ACCESS_TOKEN_SECRET,{expiresIn:"1h"})
 
         return res.status(200).json({
             status: "success",
