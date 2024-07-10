@@ -126,7 +126,7 @@ export const userLogin = async (req, res) => {
     if (!user) {
       return res.status(404).json({
         status: "error",
-        message: "Invalid username or password",
+        message: "Invalid username...",
       });
     }
 
@@ -142,7 +142,7 @@ export const userLogin = async (req, res) => {
     if (!passwordMatch) {
       return res.status(401).json({
         status: "error",
-        message: "Invalid username or password",
+        message: "Invalid password...",
       });
     }
 
@@ -892,6 +892,7 @@ export const editProfile = async (req, res) => {
     });
   }
 };
+
 
 
 
