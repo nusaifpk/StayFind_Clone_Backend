@@ -1,6 +1,6 @@
 import users from '../Model/userSchema.js'
 import { joiUserSchema, joiReviewSchema } from '../Model/validationSchema.js'
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 import { sendOTP } from "./Verify_OTP.js"
 import jwt from 'jsonwebtoken'
 import properties from '../Model/propertySchema.js'
