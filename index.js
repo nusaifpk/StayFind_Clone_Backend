@@ -22,7 +22,7 @@ const options = {
         },
         servers: [
             {
-                url: `http://localhost:${port}/`
+                url: `https://stayfind-clone-backend-41h8.onrender.com/`
             }
         ],
         tags: [
